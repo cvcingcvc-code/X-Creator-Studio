@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS generation_items (
   angle TEXT NOT NULL,
   image_prompt TEXT NOT NULL DEFAULT '',
   image_url TEXT,
+  image_source TEXT NOT NULL DEFAULT 'unconfigured',
   generated_text TEXT NOT NULL,
   originality_score INTEGER NOT NULL DEFAULT 100,
   originality_status TEXT NOT NULL DEFAULT 'passed',

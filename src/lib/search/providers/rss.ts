@@ -78,7 +78,13 @@ export class RssSearchProvider implements SearchProvider {
         link = linkMatch[1] || this.cleanHtml(linkMatch[2]);
       }
       const rawDesc = descMatch ? this.cleanHtml(descMatch[1]) : '';
-      const publishedAt = dateMatch ? new Date(dateMatch[1].trim()).toISOString() : fetchedAt;
+      let publishedAt = fetchedAt;
+      if (dateMatch && dateMatch[1]) {
+        const parsedDate = new Date(dateMatch[1].trim());
+        if (!Number.isNaN(parsedDate.getTime())) {
+          publishedAt = parsedDate.toISOString();
+        }
+      }
 
       if (title && link) {
         items.push({

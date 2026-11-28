@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CreationFactoryService } from '@/lib/factory/creation-factory.service';
-import { getDb } from '@/lib/db/client';
+import { getDb, getPersistenceStatus } from '@/lib/db/client';
+import { enforceApiGuard } from '@/lib/security/api-guard';
 import { BatchCount } from '@/types';
 
 export async function GET(req: NextRequest) {
+  const blocked = enforceApiGuard(req, { passcodeOnly: true });
+  if (blocked) return blocked;
+
   const { searchParams } = new URL(req.url);
   const handle = searchParams.get('handle') || '@creator';
 
@@ -14,7 +18,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     batches,
-    runtime: CreationFactoryService.getModelRuntimeStatus()
+    runtime: CreationFactoryService.getModelRuntimeStatus(),
+    persistence: getPersistenceStatus()
   });
 }
 
@@ -28,6 +33,12 @@ export async function POST(req: NextRequest) {
     if (![1, 5, 10, 20].includes(count)) {
       return NextResponse.json({ error: '生成批次数量仅支持 1、5、10 或 20 组' }, { status: 400 });
     }
+
+    const blocked = enforceApiGuard(req, {
+      isAiGeneration: true,
+      requestedItemCount: count
+    });
+    if (blocked) return blocked;
 
     const batch = await CreationFactoryService.startBatchCreation({
       creatorHandle,

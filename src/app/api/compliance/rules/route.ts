@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ComplianceEngineService } from '@/lib/compliance/compliance-engine.service';
+import { ComplianceEngineService, validateSafeRegexPattern } from '@/lib/compliance/compliance-engine.service';
+import { enforceApiGuard } from '@/lib/security/api-guard';
 
 export async function GET() {
   const rules = ComplianceEngineService.getActiveRules();
@@ -7,11 +8,23 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = enforceApiGuard(req);
+  if (blocked) return blocked;
+
   try {
     const body = await req.json();
     if (!body.code || !body.name || !body.category || !body.description) {
       return NextResponse.json(
         { error: '缺少必填字段：code、name、category、description' },
+        { status: 400 }
+      );
+    }
+
+    const regexPattern = body.regexPattern ? String(body.regexPattern) : '';
+    const regexCheck = validateSafeRegexPattern(regexPattern);
+    if (!regexCheck.valid) {
+      return NextResponse.json(
+        { error: regexCheck.reason || '正则表达式存在安全风险或语法错误' },
         { status: 400 }
       );
     }
@@ -31,7 +44,7 @@ export async function POST(req: NextRequest) {
         ? String(body.officialSourceUrl).trim()
         : 'https://help.x.com/en/rules-and-policies',
       ruleVersion: body.ruleVersion ? String(body.ruleVersion).trim() : '2026.2',
-      regexPattern: body.regexPattern ? String(body.regexPattern) : '',
+      regexPattern,
       keywords: Array.isArray(body.keywords) ? body.keywords : [],
       isActive: body.isActive !== false
     });

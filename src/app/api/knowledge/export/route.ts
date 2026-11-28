@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
-
-function escapeCsvCell(val: unknown): string {
-  const str = String(val ?? '');
-  if (/[",\r\n]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
+import { enforceApiGuard } from '@/lib/security/api-guard';
+import { escapeCsvCell } from '@/lib/security/csv';
 
 export async function GET(req: NextRequest) {
+  const blocked = enforceApiGuard(req);
+  if (blocked) return blocked;
   const { searchParams } = new URL(req.url);
   const handle = searchParams.get('handle') || '@creator';
   const format = (searchParams.get('format') || 'json').toLowerCase();

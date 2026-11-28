@@ -267,12 +267,12 @@ export class CreationFactoryService {
       db.prepare(`
         INSERT INTO generation_items (
           id, batch_id, sequence_no, title, angle, image_prompt,
-          image_url, generated_text, originality_score, originality_status,
+          image_url, image_source, generated_text, originality_score, originality_status,
           originality_reasons, compliance_status, compliance_violations,
           sources, status, is_confirmed, created_at, updated_at
         ) VALUES (
           ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
           ?, ?, ?,
           ?, ?, ?, ?, ?
         )
@@ -284,6 +284,7 @@ export class CreationFactoryService {
         item.angle,
         item.imagePrompt,
         item.imageUrl || null,
+        item.imageSource || 'unconfigured',
         item.generatedText,
         item.originalityScore,
         item.originalityStatus,
@@ -437,9 +438,14 @@ export class CreationFactoryService {
     const now = new Date().toISOString();
     const nextStatus = compAudit.status === 'BLOCKED' ? 'blocked' : 'ready_for_review';
 
+    const nextImageSource: 'api_generated' | 'manual_uploaded' | 'unconfigured' =
+      patch.imageUrl !== undefined
+        ? (nextImageUrl ? 'manual_uploaded' : 'unconfigured')
+        : (item.image_source || (nextImageUrl ? 'manual_uploaded' : 'unconfigured'));
+
     db.prepare(`
       UPDATE generation_items
-      SET title = ?, angle = ?, generated_text = ?, image_url = ?,
+      SET title = ?, angle = ?, generated_text = ?, image_url = ?, image_source = ?,
           originality_score = ?, originality_status = ?, originality_reasons = ?,
           compliance_status = ?, compliance_violations = ?,
           status = ?, is_confirmed = 0, updated_at = ?
@@ -449,6 +455,7 @@ export class CreationFactoryService {
       nextAngle,
       nextText,
       nextImageUrl,
+      nextImageSource,
       100 - origAudit.duplicateScore,
       origAudit.isOriginal ? 'passed' : 'flagged',
       JSON.stringify(origAudit.reasons),
@@ -466,7 +473,7 @@ export class CreationFactoryService {
       angle: nextAngle,
       imagePrompt: item.image_prompt,
       imageUrl: nextImageUrl || undefined,
-      imageSource: nextImageUrl ? 'manual_uploaded' : 'unconfigured',
+      imageSource: nextImageSource,
       generatedText: nextText,
       originalityScore: 100 - origAudit.duplicateScore,
       originalityStatus: origAudit.isOriginal ? 'passed' : 'flagged',
@@ -578,7 +585,7 @@ export class CreationFactoryService {
       angle: newAngle,
       imagePrompt: item.image_prompt,
       imageUrl: item.image_url || undefined,
-      imageSource: item.image_url ? 'manual_uploaded' : 'unconfigured',
+      imageSource: item.image_source || (item.image_url ? 'manual_uploaded' : 'unconfigured'),
       generatedText: newText,
       originalityScore: 100 - origAudit.duplicateScore,
       originalityStatus: origAudit.isOriginal ? 'passed' : 'flagged',

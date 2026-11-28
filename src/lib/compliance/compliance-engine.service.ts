@@ -10,6 +10,36 @@ export interface AuditTargetInput {
   targetUrl?: string;
 }
 
+const MAX_REGEX_LENGTH = 200;
+
+/**
+ * 校验动态正则安全性，拦截易引发 ReDoS（灾难性回溯）的嵌套量词与反向引用
+ */
+export function validateSafeRegexPattern(pattern: string): { valid: boolean; reason?: string } {
+  if (!pattern) return { valid: true };
+  if (pattern.length > MAX_REGEX_LENGTH) {
+    return { valid: false, reason: `正则表达式长度超过 ${MAX_REGEX_LENGTH} 字符上限` };
+  }
+  // 拒绝反向引用 \1..\9（易引发指数级回溯）
+  if (/\\[1-9]/.test(pattern)) {
+    return { valid: false, reason: '不允许在动态规则中使用正则反向引用 (\\1-\\9)' };
+  }
+  // 拒绝嵌套量词，如 (a+)+, (.*)*, (\w+){2,}, ([a-z]+)*
+  if (/\([^)]*[+*][^)]*\)\s*(?:[+*?]|\{\d+,?\d*\})/.test(pattern)) {
+    return { valid: false, reason: '检测到高危嵌套量词正则（存在 ReDoS 风险），已拒绝保存' };
+  }
+  // 拒绝连续重复量词如 ++ / ** / +*
+  if (/(?:[+*]\s*[+*])/.test(pattern)) {
+    return { valid: false, reason: '检测到非法连续量词正则，已拒绝保存' };
+  }
+  try {
+    new RegExp(pattern, 'i');
+    return { valid: true };
+  } catch (err: any) {
+    return { valid: false, reason: `正则表达式语法无效: ${err?.message || 'parse error'}` };
+  }
+}
+
 export class ComplianceEngineService {
   /**
    * 获取所有启用的合规规则
@@ -65,6 +95,10 @@ export class ComplianceEngineService {
     const officialSourceUrl = input.officialSourceUrl || 'https://help.x.com/en/rules-and-policies';
     const ruleVersion = input.ruleVersion || '2026.2';
     const regexPattern = input.regexPattern || '';
+    const regexCheck = validateSafeRegexPattern(regexPattern);
+    if (!regexCheck.valid) {
+      throw new Error(regexCheck.reason || '不安全的正则表达式');
+    }
     const keywords = input.keywords || [];
     const isActive = input.isActive !== false ? 1 : 0;
 
@@ -194,11 +228,11 @@ export class ComplianceEngineService {
 
     // 2. 规则库模式匹配（隐私、欺诈、版权、恶意言论等）
     for (const rule of rules) {
-      // 正则检查
-      if (rule.regexPattern) {
+      // 正则检查（仅执行通过安全校验的正则，防止 ReDoS）
+      if (rule.regexPattern && validateSafeRegexPattern(rule.regexPattern).valid) {
         try {
           const reg = new RegExp(rule.regexPattern, 'i');
-          const m = reg.exec(cleanText);
+          const m = reg.exec(cleanText.slice(0, 10_000));
           if (m) {
             violations.push({
               ruleCode: rule.code,

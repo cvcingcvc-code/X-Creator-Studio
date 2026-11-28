@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
 import { KnowledgeImporterService } from '@/lib/knowledge/knowledge-importer.service';
+import { enforceApiGuard } from '@/lib/security/api-guard';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -56,6 +57,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = enforceApiGuard(req);
+  if (blocked) return blocked;
+
   try {
     const body = await req.json();
     const handle = body.creatorHandle || '@creator';
@@ -85,6 +89,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const blocked = enforceApiGuard(req);
+  if (blocked) return blocked;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

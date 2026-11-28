@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { KnowledgeImporterService, RawPostInput } from '@/lib/knowledge/knowledge-importer.service';
+import { enforceApiGuard } from '@/lib/security/api-guard';
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_IMPORT_POSTS = 5000;
 
 export async function POST(req: NextRequest) {
+  const blocked = enforceApiGuard(req);
+  if (blocked) return blocked;
+
   try {
     const contentType = req.headers.get('content-type') || '';
     let creatorHandle = '@creator';
@@ -18,8 +25,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '未上传文件' }, { status: 400 });
       }
 
+      if (file.size > MAX_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: `上传文件体积超过上限（最大支持 ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB）` },
+          { status: 413 }
+        );
+      }
+
       const fileName = file.name.toLowerCase();
       const arrayBuffer = await file.arrayBuffer();
+      if (arrayBuffer.byteLength > MAX_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: `上传文件体积超过上限（最大支持 ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB）` },
+          { status: 413 }
+        );
+      }
       const buffer = Buffer.from(arrayBuffer);
 
       if (fileName.endsWith('.json')) {
@@ -40,10 +60,20 @@ export async function POST(req: NextRequest) {
       if (Array.isArray(body.posts)) {
         posts = body.posts;
       } else if (typeof body.rawText === 'string') {
+        if (Buffer.byteLength(body.rawText, 'utf8') > MAX_UPLOAD_BYTES) {
+          return NextResponse.json({ error: '文本导入内容超过 10 MB 上限' }, { status: 413 });
+        }
         posts = KnowledgeImporterService.parsePlainText(body.rawText);
       } else {
         return NextResponse.json({ error: '请求数据格式不符合预期' }, { status: 400 });
       }
+    }
+
+    if (posts.length > MAX_IMPORT_POSTS) {
+      return NextResponse.json(
+        { error: `单次最多导入 ${MAX_IMPORT_POSTS} 条帖子，当前共 ${posts.length} 条，请分批导入` },
+        { status: 400 }
+      );
     }
 
     const result = KnowledgeImporterService.importPosts(creatorHandle, posts, sourceType);

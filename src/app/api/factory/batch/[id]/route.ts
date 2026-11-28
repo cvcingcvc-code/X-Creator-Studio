@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CreationFactoryService } from '@/lib/factory/creation-factory.service';
 import { getDb } from '@/lib/db/client';
+import { enforceApiGuard } from '@/lib/security/api-guard';
 
 export async function GET(
   req: NextRequest,
@@ -25,7 +26,7 @@ export async function GET(
     angle: it.angle,
     imagePrompt: it.image_prompt,
     imageUrl: it.image_url || undefined,
-    imageSource: it.image_url ? 'manual_uploaded' : 'unconfigured',
+    imageSource: it.image_source || (it.image_url ? 'manual_uploaded' : 'unconfigured'),
     generatedText: it.generated_text,
     originalityScore: it.originality_score,
     originalityStatus: it.originality_status,
@@ -47,6 +48,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = enforceApiGuard(req);
+  if (blocked) return blocked;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -88,6 +92,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const blocked = enforceApiGuard(req);
+  if (blocked) return blocked;
+
   try {
     const { id } = await params;
     const body = await req.json();
