@@ -21,12 +21,17 @@ export interface UpdateItemInput {
 
 export class CreationFactoryService {
   public static getModelRuntimeStatus() {
-    const llmKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
+    const llmKey = deepseekKey || process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
     const imageKey = process.env.IMAGE_API_KEY;
     return {
       textApiConfigured: Boolean(llmKey),
-      textModel: llmKey ? (process.env.LLM_MODEL || 'gpt-4o-mini') : 'unconfigured',
-      textBaseUrl: process.env.LLM_BASE_URL || 'https://api.openai.com/v1',
+      textModel: deepseekKey
+        ? (process.env.DEEPSEEK_MODEL || 'deepseek-chat')
+        : (llmKey ? (process.env.LLM_MODEL || 'gpt-4o-mini') : 'unconfigured'),
+      textBaseUrl: deepseekKey
+        ? (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1')
+        : (process.env.LLM_BASE_URL || 'https://api.openai.com/v1'),
       imageApiConfigured: Boolean(imageKey),
       imageModel: imageKey ? (process.env.IMAGE_MODEL || 'dall-e-3') : 'unconfigured',
       imageBaseUrl: process.env.IMAGE_BASE_URL || 'https://api.openai.com/v1'
@@ -34,7 +39,7 @@ export class CreationFactoryService {
   }
 
   /**
-   * 真实调用 OpenAI 兼容文本模型接口；未配置或调用失败时返回 null，绝不伪造成功调用
+   * 真实调用 OpenAI / DeepSeek 兼容文本模型接口；未配置或调用失败时返回 null，绝不伪造成功调用
    */
   private static async generateCopyWithRealLlm(params: {
     topic: string;
@@ -43,10 +48,15 @@ export class CreationFactoryService {
     toneStyle: string;
     model: string;
   }): Promise<{ text: string; tokens: number } | null> {
-    const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
+    const apiKey = deepseekKey || process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
     if (!apiKey) return null;
 
-    const baseUrl = (process.env.LLM_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+    const baseUrl = (
+      deepseekKey
+        ? (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1')
+        : (process.env.LLM_BASE_URL || 'https://api.openai.com/v1')
+    ).replace(/\/$/, '');
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);

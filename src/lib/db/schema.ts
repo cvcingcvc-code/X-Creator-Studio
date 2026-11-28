@@ -119,4 +119,44 @@ CREATE TABLE IF NOT EXISTS generation_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_items_batch ON generation_items(batch_id);
+
+CREATE TABLE IF NOT EXISTS hotspot_inbox (
+  id TEXT PRIMARY KEY,
+  creator_handle TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  source_note TEXT NOT NULL DEFAULT '人工导入',
+  content_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(creator_handle, content_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hotspot_creator ON hotspot_inbox(creator_handle, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS studio_drafts (
+  id TEXT PRIMARY KEY,
+  creator_handle TEXT NOT NULL,
+  hotspot_id TEXT,
+  hotspot_title TEXT NOT NULL DEFAULT '',
+  goal_type TEXT NOT NULL DEFAULT 'engagement',
+  goal_detail TEXT NOT NULL DEFAULT '',
+  angle TEXT NOT NULL DEFAULT '',
+  main_text TEXT NOT NULL,
+  first_comment TEXT NOT NULL DEFAULT '',
+  originality_score INTEGER NOT NULL DEFAULT 100,
+  originality_status TEXT NOT NULL DEFAULT 'passed',
+  compliance_status TEXT NOT NULL DEFAULT 'PASS',
+  compliance_notes TEXT NOT NULL DEFAULT '[]',
+  model_used TEXT NOT NULL DEFAULT 'unconfigured',
+  status TEXT NOT NULL DEFAULT 'ready',
+  copied_at TEXT,
+  published_at TEXT,
+  published_url TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_studio_drafts_creator ON studio_drafts(creator_handle, created_at DESC);
 `;

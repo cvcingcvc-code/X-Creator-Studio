@@ -188,3 +188,40 @@ export interface CreationBatch {
   createdAt: string;
   updatedAt: string;
 }
+
+// 8. 极简今日创作台（人工导入热点 -> 目标选定 -> 风格出稿 -> 一键复制与记账）
+export type StudioGoalType = 'engagement' | 'exposure' | 'app_validation' | 'custom';
+
+export interface HotspotItem {
+  id: string;
+  creatorHandle: string;
+  title: string;
+  content: string;
+  sourceNote: string;
+  status: 'pending' | 'used' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudioDraft {
+  id: string;
+  creatorHandle: string;
+  hotspotId?: string;
+  hotspotTitle: string;
+  goalType: StudioGoalType;
+  goalDetail: string;
+  angle: string;
+  mainText: string;
+  firstComment: string;
+  originalityScore: number;
+  originalityStatus: 'passed' | 'flagged';
+  complianceStatus: ComplianceRating;
+  complianceNotes: string[];
+  modelUsed: string;
+  status: 'ready' | 'copied' | 'published';
+  copiedAt?: string;
+  publishedAt?: string;
+  publishedUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -33,11 +33,12 @@ export function Navbar({
   const [draftHandle, setDraftHandle] = useState(creatorHandle);
 
   const tabs = [
-    { id: 'knowledge', label: '个人知识库 & 图谱', icon: BookOpen, badge: `${totalPosts} 篇` },
-    { id: 'originality', label: '原创性检测实验室', icon: Sparkles },
-    { id: 'search', label: '真实联网雷达', icon: Search },
-    { id: 'factory', label: '批量图文工坊', icon: Layers },
-    { id: 'compliance', label: '平台与法律合规', icon: ShieldCheck }
+    { id: 'desk', label: '今日创作台', icon: Sparkles },
+    { id: 'knowledge', label: '风格与知识库', icon: BookOpen, badge: `${totalPosts} 篇` },
+    { id: 'originality', label: '原创性检测', icon: Sparkles },
+    { id: 'search', label: '联网雷达', icon: Search },
+    { id: 'factory', label: '批量工坊', icon: Layers },
+    { id: 'compliance', label: '合规中心', icon: ShieldCheck }
   ];
 
   const handleSave = (e: React.FormEvent) => {

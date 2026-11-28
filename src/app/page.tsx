@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { SnowParticles } from '@/components/SnowParticles';
+import { StudioDeskTab } from '@/components/tabs/StudioDeskTab';
 import { KnowledgeTab } from '@/components/tabs/KnowledgeTab';
 import { OriginalityTab } from '@/components/tabs/OriginalityTab';
 import { SearchRadarTab } from '@/components/tabs/SearchRadarTab';
@@ -12,7 +13,7 @@ import { ComplianceTab } from '@/components/tabs/ComplianceTab';
 const HANDLE_STORAGE_KEY = 'x_creator_studio_active_handle';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('knowledge');
+  const [activeTab, setActiveTab] = useState('desk');
   const [creatorHandle, setCreatorHandle] = useState('@creator');
   const [totalPosts, setTotalPosts] = useState(0);
   const [factoryTopic, setFactoryTopic] = useState('');
@@ -67,6 +68,14 @@ export default function Home() {
 
       {/* Main Content Workspace */}
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+        {activeTab === 'desk' && (
+          <StudioDeskTab
+            creatorHandle={creatorHandle}
+            onGoToKnowledge={() => setActiveTab('knowledge')}
+            onRefreshStats={() => refreshStats(creatorHandle)}
+          />
+        )}
+
         {activeTab === 'knowledge' && (
           <KnowledgeTab
             creatorHandle={creatorHandle}
