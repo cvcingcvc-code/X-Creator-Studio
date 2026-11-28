@@ -1,0 +1,37 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+
+# Production
+build
+
+# Misc
+.DS_Store
+*.pem
+
+# Local env files - NEVER commit secrets
+.env*.local
+.env
+
+# Database & persistence files - NEVER commit personal account data
+/data/*.db
+/data/*.db-wal
+/data/*.db-shm
+/data/*.sqlite
+/uploads/*
+!/uploads/.gitkeep
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
